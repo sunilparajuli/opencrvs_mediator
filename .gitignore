@@ -1,0 +1,75 @@
+# Python bytecode files
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+
+# Django-specific files
+*.log
+*.pot
+*.pyc
+*.db
+*.sqlite3
+*.bak
+*.swp
+*.swo
+
+# Django migrations
+*/migrations/*
+
+# Virtual environment
+env/
+venv/
+ENV/
+.venv/
+.ENV/
+venv.bak/
+
+# Django settings for local development
+settings_local.py
+
+# IDE and editor-specific files
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Mac OS specific files
+.DS_Store
+
+# Windows-specific files
+Thumbs.db
+
+# Test and coverage reports
+.coverage
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# Frontend build files (if you have frontend code, e.g., using React or Vue)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Environment variables and credentials
+.env
+.env.*
+
+# Docker files
+docker-compose.override.yml
+docker-compose.local.yml
+*.env
+
+# Static and media files (if you don't want to commit them)
+static/
+media/
+
+# Celery and task-related files (if you're using Celery)
+celerybeat-schedule
+*.pid
+
+# pytest-related files
+.cache/
+.webhook_cred
+*.pyc
