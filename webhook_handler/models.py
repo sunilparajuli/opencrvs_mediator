@@ -15,3 +15,19 @@ class WebhookEvent(models.Model):
 
     def __str__(self):
         return f"Event: {self.event_type} at {self.received_at}"
+
+
+
+class Configuration(models.Model):
+    client_id = models.CharField(max_length=255, blank=True, null=True)
+    client_secret = models.CharField(max_length=255, blank=True, null=True)
+    sha_secret = models.CharField(max_length=255, blank=True, null=True)
+    webhook_url = models.URLField(blank=True, null=True)
+    auth_url = models.URLField(blank=True, null=True)
+
+    def __str__(self):
+        return "System Configuration (Single Row Only)"
+
+    class Meta:
+        verbose_name = "Configuration"
+        verbose_name_plural = "Configuration"

@@ -1,71 +1,51 @@
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Subscription
-from webhook_handler.serializers.serializers import SubscriptionSerializer
 from webhook_handler.utils.crvs_to_imis_converter import map_fhir_to_openimis
 import requests
 import logging
-
+from webhook_handler.utils.crvs_auth_token import get_opencrvs_auth_token
+from webhook_handler.utils.configurations import get_configuration
+from .models import *
 logger = logging.getLogger(__name__)
+
+
 
 class SubscriptionView(APIView):
     def post(self, request):
         data = request.data
-        print("data", request.data)
-        #serializer = SubscriptionSerializer(data=request.data)
-        if True: #or serializer.is_valid():
-            #subscription = serializer.save()
-            #print(subscription.__dict__)
-            # Subscribe to OpenCRVS here using requests
-            try:
-                import pdb;pdb.set_trace()
-                auth_token = self.get_opencrvs_auth_token()  # Call your auth token function
-                response = requests.post(
-                    'http://localhost:2525/webhooks',  # Replace with actual OpenCRVS webhook URL
-                    json={
-                        'hub': {
-                            'callback': data.get('callback_url'),#subscription.callback_url,
-                            'mode': 'subscribe',
-                            'secret': 'b15e2dab-6362-408b-b3b9-e8d76e77ac22',  # Shared secret for security
-                            'topic': data.get('topic')#subscription.topic
-                        }
-                    },
-                    headers={
-                        'Authorization': f'Bearer {auth_token}',
-                        'Content-Type': 'application/json'
+        config = get_configuration()
+        if not config["webhook_url"]:
+            return Response({"error": "Webhook URL not configured"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        callback_url = data.get('callback_url', config["webhook_url"])
+        try:
+            auth_token = get_opencrvs_auth_token(config["client_id"], config["client_secret"], config['auth_url'])
+            response = requests.post(
+                config["webhook_url"],
+                json={
+                    'hub': {
+                        'callback': callback_url,
+                        'mode': 'subscribe',
+                        'secret': config["sha_secret"],
+                        'topic': data.get('topic')
                     }
-                )
-                if response.status_code == 200:
-                    logger.info('Subscription successful')
-                    print("success", response.json())
-                    #return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
-                    pass
-                else:
-                    return Response({"error": "Failed to subscribe"}, status=status.HTTP_400_BAD_REQUEST)
-            except Exception as e:
-                logger.error(f"Error during subscription: {str(e)}")
-                return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        else:
-            
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                },
+                headers={
+                    'Authorization': f'Bearer {auth_token}',
+                    'Content-Type': 'application/json'
+                }
+            )
+            if response.status_code in [200,202]:
+                return Response({}, status=status.HTTP_202_ACCEPTED)
+            else:
+                logger.error(f"Subscription failed: {response.content}")
+                return Response({"error": "Failed to subscribe"}, status=status.HTTP_400_BAD_REQUEST)
 
-    def get_opencrvs_auth_token(self):
-        from webhook_handler.utils.utils import get_opencrvs_auth_token
-        token = get_opencrvs_auth_token()
-        return token
+        except Exception as e:
+            logger.error(f"Error during subscription: {str(e)}")
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
 
-
-
-
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from .models import WebhookEvent
-import logging
-
-logger = logging.getLogger(__name__)
 
 class WebhookEventView(APIView):
     def post(self, request):
@@ -87,5 +67,5 @@ class WebhookEventView(APIView):
         #     event_type=event_type,
         #     payload=request.data  # Optionally, you can save the mapped_data instead
         # )
-
-        return Response({"message": "Event received and processed successfully"}, status=200)
+        print(request.data)
+        return Response({"message": f"Event received and processed successfully"}, status=200)
