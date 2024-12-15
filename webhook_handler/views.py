@@ -21,6 +21,7 @@ def webhook_manager(request):
 class SubscriptionView(APIView):
     def post(self, request):
         data = request.data
+        print("request data", request.data)
         topic = data.get("topic")
         if not topic:
             return Response(
@@ -42,13 +43,14 @@ class SubscriptionView(APIView):
         try:
             auth_token = get_opencrvs_auth_token(config["client_id"], config["client_secret"], config['auth_url'])
             response = requests.post(
-                config["webhook_url"],
+                # config["webhook_url"],
+                "http://localhost:5001/subscribe-webhook",
                 json={
                     'hub': {
-                        'callback': callback_url,
+                        'callback': "http://localhost:5001/post-openimis",#callback_url,
                         'mode': 'subscribe',
                         'secret': config["sha_secret"],
-                        'topic': f"{data.get('topic')}" #data.get('topic')
+                        'topic': f"{data.get('topic')}"
                     }
                 },
                 headers={
@@ -173,13 +175,10 @@ def transform_patient_resources_with_practitioner(resources):
 
 
 
-
-
-
-
 class WebhookEventView(APIView):
     def post(self, request):
         # Log the incoming payload
+        print(request.data)
         logger.info(f"Received webhook payload: {request.data}")
         entries = request.data.get("event", {}).get("context", [])[0].get("entry", [])
 
@@ -195,8 +194,6 @@ class WebhookEventView(APIView):
             )
         ]
 
-        # Transform the filtered patient resources
-        # Transform the filtered patient resources
         transformed_patient_resources = transform_patient_resources_with_practitioner(filtered_patient_resources)
         token = get_bearer_token()
         
@@ -205,6 +202,39 @@ class WebhookEventView(APIView):
             post_filtered_patient(filtered_patient_resources[0], token)        
         return Response({"message": f"Event received and processed successfully"}, status=200)
 
+
+class ListAppWebhooksAPIView(APIView):
+    def get(self, request, *args, **kwargs):
+        try:
+            # Define the necessary configuration
+            config = get_configuration()
+            BASE_URL = "http://localhost:2525/webhooks"
+            auth_token = get_opencrvs_auth_token(config["client_id"], config["client_secret"], config['auth_url'])
+
+            # Set headers and payload
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {auth_token}"
+            }
+            payload = {
+                "hub": {
+                    "callback": "http://localhost:5001/post-openimis",#"http://localhost:8000/api/webhooks/",
+                    "mode": "subscribe",
+                    "topic": "BIRTH_REGISTERED",
+                    "secret": "b15e2dab-6362-408b-b3b9-e8d76e77ac22"
+                }
+            }
+
+            # Make the GET request to the webhook service
+            response = requests.get(BASE_URL, headers=headers, json=payload)
+            response.raise_for_status()
+
+            # Return the entries in the response
+            data = response.json()
+            return Response(data, status=response.status_code)
+
+        except requests.exceptions.RequestException as e:
+            return Response({"error": str(e)}, status=500)
 
 class DeleteWebHooksAPIView(APIView):
     config = get_configuration()

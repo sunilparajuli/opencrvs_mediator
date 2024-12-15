@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Configuration
+from .models import Configuration, Subscription
 
 @admin.register(Configuration)
 class ConfigurationAdmin(admin.ModelAdmin):
@@ -13,3 +13,5 @@ class ConfigurationAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):
         # Only allow adding if there's no configuration in the database
         return not Configuration.objects.exists()
+
+admin.site.register(Subscription)

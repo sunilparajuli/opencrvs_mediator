@@ -3,104 +3,132 @@
 {% block title %}Manage Webhooks{% endblock %}
 
 {% block content %}
-    <h1>Webhook Manager</h1>
+<div id="app" class="p-6">
+    <h1 class="text-2xl font-bold mb-4">Webhook Manager</h1>
 
-    <div>
-        <h2>Actions</h2>
-        <button @click="listWebhooks">List All Webhooks</button>
-        <button @click="subscribeWebhook">Subscribe to Webhook</button>
-        <button @click="deleteAllWebhooks">Delete All Webhooks</button>
+    <div class="actions mb-6">
+        <h2 class="text-xl font-semibold mb-2">Actions</h2>
+        <div class="space-x-4">
+            <button @click="fetchWebhooks" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                List All Webhooks
+            </button>
+            <button @click="subscribeWebhook('BIRTH_REGISTERED')" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+                Subscribe to Birth Webhook
+            </button>
+            <button @click="subscribeWebhook('DEATH_REGISTERED')" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+                Subscribe to Birth Webhook
+            </button>            
+            <button @click="deleteAllWebhooks" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
+                Delete All Webhooks
+            </button>
+        </div>
     </div>
 
-    <div>
-        <h2>Webhooks</h2>
-        <ul>
-            <li v-for="hook in webhooks" :key="hook.id">
-                ID: {{ hook.id }} | Callback: {{ hook.callback }}
-            </li>
-        </ul>
+
+
+    <div 
+        v-if="snackbar.visible"
+        :class="`fixed bottom-4 right-4 px-6 py-3 text-white rounded shadow-lg transition duration-300 bg-${snackbar.color}-500`"
+    >
+        [[ snackbar.message ]]
     </div>
 
-    <div v-if="message" :class="{ error: isError, success: !isError }">
-        {{ message }}
+ <!-- Display Webhook List -->
+    <div v-if="loading" class="mt-4 text-gray-600">Loading webhooks...</div>
+    <ul v-if="!loading && webhooks.length" class="list-disc pl-6 mt-4">
+        <li v-for="webhook in webhooks" :key="webhook.id">
+            <strong>ID:</strong> [[ webhook.id ]] <br />
+            <strong>Callback:</strong> [[ webhook.callback ]] <br />
+            <strong>Created By:</strong> [[ webhook.createdBy.name ]] ([[ webhook.createdBy.username ]]) <br />
+            <strong>Topic:</strong> [[ webhook.topic ]] <br />
+            <strong>Created At:</strong> [[ webhook.createdAt ]]
+        </li>
+    </ul>
+
+    <!-- No Webhooks Message -->
+    <div v-if="!loading && !webhooks.length" class="mt-4 text-gray-600">
+        No webhooks found.
     </div>
+</div>
+
 {% endblock %}
 
 {% block extra_head %}
 <script>
-    const { createApp } = Vue;
+   const { createApp } = Vue;
 
-    // Get the CSRF token from the meta tag
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+const csrfToken = '';//document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-    createApp({
-        data() {
-            return {
-                webhooks: [],
+createApp({
+    delimiters: ['[[', ']]'],
+    data() {
+        return {
+            webhooks: [],
+            snackbar: {
+                visible: false,
                 message: '',
-                isError: false,
-            };
+                color : null
+            },
+        };
+    },
+    methods: {
+        showSnackbar(message, color) {
+            this.snackbar.message = message;
+            this.snackbar.visible = true;
+            this.snackbar.color = color;
+
+            // Hide the snackbar after 3 seconds
+            setTimeout(() => {
+                this.snackbar.visible = false;
+            }, 3000);
         },
-        methods: {
-            async listWebhooks() {
-                try {
-                    // Make GET request with CSRF token
-                    const response = await axios.get('/api/webhooks', {
-                        headers: {
-                            'X-CSRFToken': csrfToken  // Add CSRF token here
-                        },
-                    });
-                    this.webhooks = response.data.entries || [];
-                    this.message = 'Fetched webhooks successfully.';
-                    this.isError = false;
-                } catch (error) {
-                    console.error('Error fetching webhooks:', error);
-                    this.message = 'Failed to fetch webhooks.';
-                    this.isError = true;
+        async subscribeWebhook(topic) {
+            try {
+                const payload = { topic };
+                const response = await axios.post('/api/subscribe/', payload, {
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                    },
+                });
+                if (response.status === 202) {
+                    this.showSnackbar(`Successfully subscribed to ${topic} webhook!`, 'green');
+                } else {
+                    console.error('Subscription failed.');
                 }
-            },
-            async subscribeWebhook() {
-                try {
-                    const payload = {
-                        'topic': 'BIRTH_REGISTERED'
-                    };
-                    // Make POST request with CSRF token
-                    const response = await axios.post('/api/subscribe/', payload, {
-                        headers: {
-                            'X-CSRFToken': csrfToken  // Add CSRF token here
-                        }
-                    });
-                    if (response.status === 202) {
-                        this.message = 'Successfully subscribed to webhook.';
-                        this.isError = false;
-                    } else {
-                        this.message = 'Subscription failed.';
-                        this.isError = true;
-                    }
-                } catch (error) {
-                    console.error('Error subscribing to webhook:', error);
-                    this.message = 'Failed to subscribe to webhook.';
-                    this.isError = true;
-                }
-            },
-            async deleteAllWebhooks() {
-                try {
-                    // Make POST request with CSRF token
-                    const response = await axios.post('/api/delete-webhooks/', {}, {
-                        headers: {
-                            'X-CSRFToken': csrfToken  // Add CSRF token here
-                        }
-                    });
-                    this.message = 'Successfully deleted all webhooks.';
-                    this.isError = false;
-                    this.listWebhooks(); // Refresh the list of webhooks
-                } catch (error) {
-                    console.error('Error deleting webhooks:', error);
-                    this.message = 'Failed to delete webhooks.';
-                    this.isError = true;
-                }
-            },
+            } catch (error) {
+                console.error(`Error subscribing to ${topic} webhook:`, error);
+                this.showSnackbar(error.message, 'red');
+            }
         },
-    }).mount('#app');
+        async deleteAllWebhooks() {
+            try {
+                await axios.post('/api/delete-webhooks/', {}, {
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                    },
+                });
+                this.webhooks = [];
+                this.showSnackbar('Successfully deleted all webhooks!', 'green');
+            } catch (error) {
+                console.error('Error deleting webhooks:', error);
+                this.showSnackbar(error, 'red');
+            }
+        },
+        async fetchWebhooks() {
+            this.loading = true;
+
+            try {
+                const response = await axios.get('/api/list-webhooks/'); 
+                this.webhooks = response.data.entries || [];
+                console.log(this.webhooks)
+            } catch (error) {
+                console.error('Error fetching webhooks:', error);
+            } finally {
+                this.loading = false;
+            }
+        },        
+    },
+}).mount('#app');
+
 </script>
 {% endblock %}

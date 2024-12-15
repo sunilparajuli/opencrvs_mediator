@@ -28,7 +28,7 @@ log_file_path = current_directory / "subscription.log"
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 import os
 
