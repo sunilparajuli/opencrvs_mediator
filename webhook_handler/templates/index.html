@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Webhooks{% endblock %}
+
+{% block content %}
+    <h1>Webhook Manager</h1>
+
+    <div>
+        <h2>Actions</h2>
+        <button @click="listWebhooks">List All Webhooks</button>
+        <button @click="subscribeWebhook">Subscribe to Webhook</button>
+        <button @click="deleteAllWebhooks">Delete All Webhooks</button>
+    </div>
+
+    <div>
+        <h2>Webhooks</h2>
+        <ul>
+            <li v-for="hook in webhooks" :key="hook.id">
+                ID: {{ hook.id }} | Callback: {{ hook.callback }}
+            </li>
+        </ul>
+    </div>
+
+    <div v-if="message" :class="{ error: isError, success: !isError }">
+        {{ message }}
+    </div>
+{% endblock %}
+
+{% block extra_head %}
+<script>
+    const { createApp } = Vue;
+
+    // Get the CSRF token from the meta tag
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    createApp({
+        data() {
+            return {
+                webhooks: [],
+                message: '',
+                isError: false,
+            };
+        },
+        methods: {
+            async listWebhooks() {
+                try {
+                    // Make GET request with CSRF token
+                    const response = await axios.get('/api/webhooks', {
+                        headers: {
+                            'X-CSRFToken': csrfToken  // Add CSRF token here
+                        },
+                    });
+                    this.webhooks = response.data.entries || [];
+                    this.message = 'Fetched webhooks successfully.';
+                    this.isError = false;
+                } catch (error) {
+                    console.error('Error fetching webhooks:', error);
+                    this.message = 'Failed to fetch webhooks.';
+                    this.isError = true;
+                }
+            },
+            async subscribeWebhook() {
+                try {
+                    const payload = {
+                        'topic': 'BIRTH_REGISTERED'
+                    };
+                    // Make POST request with CSRF token
+                    const response = await axios.post('/api/subscribe/', payload, {
+                        headers: {
+                            'X-CSRFToken': csrfToken  // Add CSRF token here
+                        }
+                    });
+                    if (response.status === 202) {
+                        this.message = 'Successfully subscribed to webhook.';
+                        this.isError = false;
+                    } else {
+                        this.message = 'Subscription failed.';
+                        this.isError = true;
+                    }
+                } catch (error) {
+                    console.error('Error subscribing to webhook:', error);
+                    this.message = 'Failed to subscribe to webhook.';
+                    this.isError = true;
+                }
+            },
+            async deleteAllWebhooks() {
+                try {
+                    // Make POST request with CSRF token
+                    const response = await axios.post('/api/delete-webhooks/', {}, {
+                        headers: {
+                            'X-CSRFToken': csrfToken  // Add CSRF token here
+                        }
+                    });
+                    this.message = 'Successfully deleted all webhooks.';
+                    this.isError = false;
+                    this.listWebhooks(); // Refresh the list of webhooks
+                } catch (error) {
+                    console.error('Error deleting webhooks:', error);
+                    this.message = 'Failed to delete webhooks.';
+                    this.isError = true;
+                }
+            },
+        },
+    }).mount('#app');
+</script>
+{% endblock %}

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="csrf-token" content="{% csrf_token %}">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Webhook Manager{% endblock %}</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        button {
+            margin: 5px 0;
+        }
+        ul {
+            padding: 0;
+            list-style: none;
+        }
+        li {
+            background: #f0f0f0;
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+    </style>
+   
+</head>
+<body>
+    <div id="app" class="container">
+        {% block content %}{% endblock %}
+         {% block extra_head %}{% endblock %}
+    </div>
+</body>
+</html>

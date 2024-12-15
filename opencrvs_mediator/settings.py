@@ -22,11 +22,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-x3d#f-)l12^%4n$td1d%6e5+88zyhpnajh#8$2*e6m)+#)^kr2'
 
+current_directory = Path(__file__).parent.resolve()
+log_file_path = current_directory / "subscription.log"
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 ALLOWED_HOSTS = []
 
+import os
 
 # Application definition
 
@@ -45,7 +49,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    #'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -56,7 +60,9 @@ ROOT_URLCONF = 'opencrvs_mediator.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            os.path.join(BASE_DIR, 'templates'),  # This includes global templates
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -123,3 +129,55 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+# settings.py
+
+# Add this to enable authentication via Basic Authentication or Session Authentication
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        # Uncomment this line to use Session Authentication (cookie-based)
+        # 'rest_framework.authentication.SessionAuthentication',
+        
+        # Use Basic Authentication for API requests
+        'rest_framework.authentication.BasicAuthentication',
+    ],
+}
+
+
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': False,
+#     'formatters': {
+#         'verbose': {
+#             'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+#         },
+#         'simple': {
+#             'format': '%(levelname)s %(message)s'
+#         },
+#     },
+#     'handlers': {
+#         'file': {
+#             'level': 'DEBUG',
+#             'class': 'logging.FileHandler',
+#             # Use an absolute path dynamically based on BASE_DIR
+#             'filename': os.path.join(os.path.dirname(os.path.abspath(__file__)),'app.log'),
+#             'formatter': 'verbose',
+#         },
+#         'console': {
+#             'level': 'DEBUG',
+#             'class': 'logging.StreamHandler',
+#             'formatter': 'simple',
+#         },
+#     },
+#     'loggers': {
+#         'django': {
+#             'handlers': ['file', 'console'],
+#             'level': 'DEBUG',
+#             'propagate': True,
+#         },
+#         'your_custom_logger': {
+#             'handlers': ['file', 'console'],
+#             'level': 'DEBUG',
+#             'propagate': False,
+#         },
+#     },
+# }

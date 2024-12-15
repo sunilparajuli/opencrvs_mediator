@@ -13,7 +13,7 @@ __pycache__/
 *.bak
 *.swp
 *.swo
-
+*.sqlite3
 # Django migrations
 */migrations/*
 

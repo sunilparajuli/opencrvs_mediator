@@ -16,8 +16,9 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-
+from webhook_handler.views import *
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('', webhook_manager, name='webhook_manager'),
     path('api/', include('webhook_handler.urls')),
 ]
