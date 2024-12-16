@@ -1,111 +1,124 @@
-# utils.py
-
-def map_fhir_to_openimis(request_data):
-    """Utility function to map FHIR data to OpenIMIS format"""
-    event_data = request_data.get('event')
-    context = event_data.get('context') if event_data else None
-
-    if not context:
-        return None, "Invalid payload: Missing context"
-
-    # Initialize a list to hold the mapped data
-    mapped_data = []
-
-    for entry in context[0]['entry']:
-        resource = entry.get('resource')
-        if resource:
-            if resource.get('resourceType') == 'Patient':
-                patient_data = map_patient_to_openimis(resource)
-                mapped_data.append({'patient': patient_data})
-            elif resource.get('resourceType') == 'RelatedPerson':
-                related_person_data = map_related_person_to_openimis(resource)
-                mapped_data.append({'related_person': related_person_data})
-            elif resource.get('resourceType') == 'DocumentReference':
-                document_data = map_document_reference_to_openimis(resource)
-                mapped_data.append({'document_reference': document_data})
-            elif resource.get('resourceType') == 'Task':
-                task_data = map_task_to_openimis(resource)
-                mapped_data.append({'task': task_data})
-
-    return mapped_data, None
+import json
+import uuid  # Add this line
+import logging
+import requests
+from rest_framework.views import APIView
+from rest_framework.response import Response
 
 
-def map_patient_to_openimis(resource):
-    """Map FHIR Patient data to OpenIMIS format"""
-    patient_data = {
-        'name': resource.get('name', [{}])[0].get('given', ''),
-        'family_name': resource.get('name', [{}])[0].get('family', ''),
-        'birth_date': resource.get('birthDate'),
-        'gender': resource.get('gender'),
-        'identifier': map_patient_identifiers(resource.get('identifier', [])),
-        'address': map_address(resource.get('address', [])),
+def extract_identifier_value(resource):
+    """
+    Extract the first value from the identifier list.
+    """
+    identifiers = resource.get("identifier", [])
+    return identifiers[0]["value"] if identifiers else "11112223"
+
+# Function to map patient data
+def map_patient_data(resource, is_head=False, group_reference_id="c8e83c86-5868-479a-8c30-b41d16c77cc3"):
+    """
+    Maps a Patient resource to the required structure.
+    """
+    patient_id = str(uuid.uuid4())  # Generate unique ID for the patient
+    identifier_value = extract_identifier_value(resource)  # Extract the value from 'identifier'
+
+    import pdb;pdb.set_trace()
+    mapped_patient = {
+        "resourceType": "Patient",
+        "id": patient_id,
+        "extension": [
+            {
+                "url": "https://openimis.github.io/openimis_fhir_r4_ig/StructureDefinition/patient-is-head",
+                "valueBoolean": is_head  # Set True only for the first loop
+            },
+            {
+                "url": "https://openimis.github.io/openimis_fhir_r4_ig/StructureDefinition/patient-card-issued",
+                "valueBoolean": False
+            },
+            {
+                "url": "https://openimis.github.io/openimis_fhir_r4_ig/StructureDefinition/patient-group-reference",
+                "valueReference": {
+                    "reference": f"Group/{group_reference_id}",
+                    "type": "Group",
+                    "identifier": {
+                        "type": {
+                            "coding": [
+                                {
+                                    "system": "https://openimis.github.io/openimis_fhir_r4_ig/CodeSystem/openimis-identifiers",
+                                    "code": "UUID"
+                                }
+                            ]
+                        },
+                        "value": group_reference_id
+                    }
+                }
+            }
+        ],
+        "identifier": [
+            {
+                "type": {
+                    "coding": [
+                        {
+                            "system": "https://openimis.github.io/openimis_fhir_r4_ig/CodeSystem/openimis-identifiers",
+                            "code": "UUID"
+                        }
+                    ]
+                },
+                "value": patient_id
+            },
+            {
+                "type": {
+                    "coding": [
+                        {
+                            "system": "https://openimis.github.io/openimis_fhir_r4_ig/CodeSystem/openimis-identifiers",
+                            "code": "Code"
+                        }
+                    ]
+                },
+                "value": identifier_value  # Use the extracted identifier value
+            }
+        ],
+        "name": [
+            {
+                "use": "usual",
+                "family": resource["name"][0]["family"][0],
+                "given": [resource["name"][0]["given"][0]]
+            }
+        ],
+        "gender": resource.get("gender", "male"),  # Default gender is "male"
+        "birthDate": resource["birthDate"],
+        "address": [
+            {
+                "extension": [
+                    {
+                        "url": "https://openimis.github.io/openimis_fhir_r4_ig/StructureDefinition/address-municipality",
+                        "valueString": "Achi"
+                    },
+                    {
+                        "url": "https://openimis.github.io/openimis_fhir_r4_ig/StructureDefinition/address-location-reference",
+                        "valueReference": {
+                            "reference": "Location/8ed4eb0d-61ae-4022-8b4c-3076a619f957",
+                            "type": "Location",
+                            "identifier": {
+                                "type": {
+                                    "coding": [
+                                        {
+                                            "system": "https://openimis.github.io/openimis_fhir_r4_ig/CodeSystem/openimis-identifiers",
+                                            "code": "UUID"
+                                        }
+                                    ]
+                                },
+                                "value": "8ed4eb0d-61ae-4022-8b4c-3076a619f957"
+                            }
+                        }
+                    }
+                ],
+                "use": "home",
+                "type": "physical",
+                "text": "Jetset zone 85",
+                "city": "Rachla",
+                "district": "Rapta",
+                "state": "Ultha"
+            }
+        ]
     }
-    return patient_data
-
-
-def map_related_person_to_openimis(resource):
-    """Map FHIR RelatedPerson data to OpenIMIS format"""
-    related_person_data = {
-        'relationship': resource.get('relationship', {}).get('coding', [{}])[0].get('code'),
-        'patient_reference': resource.get('patient', {}).get('reference'),
-        'meta': resource.get('meta', {}),
-    }
-    return related_person_data
-
-
-def map_document_reference_to_openimis(resource):
-    """Map FHIR DocumentReference data to OpenIMIS format"""
-    document_data = {
-        'document_type': resource.get('type', {}).get('coding', [{}])[0].get('code'),
-        'attachment': resource.get('content', [{}])[0].get('attachment', {}).get('data'),
-        'status': resource.get('status'),
-        'subject': resource.get('subject', {}).get('display'),
-    }
-    return document_data
-
-
-def map_task_to_openimis(resource):
-    """Map FHIR Task data to OpenIMIS format"""
-    task_data = {
-        'status': resource.get('status'),
-        'intent': resource.get('intent'),
-        'code': resource.get('code', {}).get('coding', [{}])[0].get('code'),
-        'focus': resource.get('focus', {}).get('reference'),
-        'identifier': map_task_identifiers(resource.get('identifier', [])),
-    }
-    return task_data
-
-
-def map_address(address_data):
-    """Map FHIR Address data to OpenIMIS format"""
-    if address_data:
-        return {
-            'line': address_data[0].get('line', []),
-            'district': address_data[0].get('district'),
-            'state': address_data[0].get('state'),
-            'country': address_data[0].get('country'),
-        }
-    return {}
-
-
-def map_patient_identifiers(identifiers):
-    """Map FHIR Patient identifiers to OpenIMIS format"""
-    mapped_identifiers = []
-    for identifier in identifiers:
-        mapped_identifiers.append({
-            'system': identifier.get('system'),
-            'value': identifier.get('value'),
-            'type': identifier.get('type', {}).get('coding', [{}])[0].get('code')
-        })
-    return mapped_identifiers
-
-
-def map_task_identifiers(identifiers):
-    """Map FHIR Task identifiers to OpenIMIS format"""
-    mapped_identifiers = []
-    for identifier in identifiers:
-        mapped_identifiers.append({
-            'system': identifier.get('system'),
-            'value': identifier.get('value')
-        })
-    return mapped_identifiers
+    return mapped_patient

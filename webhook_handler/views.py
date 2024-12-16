@@ -1,11 +1,11 @@
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from webhook_handler.utils.crvs_to_imis_converter import map_fhir_to_openimis
 import requests
 import logging
 from webhook_handler.utils.crvs_auth_token import get_opencrvs_auth_token
 from webhook_handler.utils.configurations import get_configuration
+from webhook_handler.utils.crvs_to_imis_converter import map_patient_data
 from .models import *
 from django.shortcuts import render
 import json
@@ -75,7 +75,7 @@ class SubscriptionView(APIView):
 from webhook_handler.utils.get_imis_auth_token import get_bearer_token
 
 def post_filtered_patient(filtered_patient, token):
-    post_url = "https://imisbeta.hib.gov.np/api/api_fhir_r4/Patient/"
+    post_url = "https://demoimis.tinker.com.np/api/api_fhir_r4/Patient/"#"https://imisbeta.hib.gov.np/api/api_fhir_r4/Patient/"
     
     # Headers including the Bearer token
     headers = {
@@ -85,121 +85,47 @@ def post_filtered_patient(filtered_patient, token):
     
     # Sending the filtered patient data to the Patient endpoint
     response = requests.post(post_url, headers=headers, json=filtered_patient)
-    
+    # print("after_resp", response.json())
     if response.status_code == 201:
         logger.info("Successfully posted the patient data.")
     else:
-        print(f"response data", response)
+        # print(f"response data", response)
         logger.error(f"Failed to post patient data, status code: {response.status_code}, response: {response.text}")
 
-
-# Function to update or transform JSON with added fields
-def transform_patient_resources_with_practitioner(resources):
-    transformed = []
-    for resource in resources:
-        transformed.append({
-            "resourceType": "Patient",
-            "id": resource["id"],
-            "name": resource.get("name", []),
-            "telecom": resource.get("telecom", []),
-            "gender": resource.get("gender", ""),
-            "birthDate": resource.get("birthDate", ""),
-            "address": [
-                {
-                    "extension": [
-                        {
-                            "url": "https://openimis.github.io/openimis_fhir_r4_ig/StructureDefinition/address-municipality",
-                            "valueString": "Tikapur Municipality"
-                        },
-                        {
-                            "url": "https://openimis.github.io/openimis_fhir_r4_ig/StructureDefinition/address-location-reference",
-                            "valueReference": {
-                                "reference": "Location/D8C2B724-6D33-4E87-8113-9D10884FACA9",
-                                "type": "Location",
-                                "identifier": {
-                                    "type": {
-                                        "coding": [
-                                            {
-                                                "system": "https://openimis.github.io/openimis_fhir_r4_ig/CodeSystem/openimis-identifiers",
-                                                "code": "UUID"
-                                            }
-                                        ]
-                                    },
-                                    "value": "D8C2B724-6D33-4E87-8113-9D10884FACA9"
-                                }
-                            }
-                        }
-                    ],
-                    "use": "home",
-                    "type": "physical",
-                    "city": "9",
-                    "district": "Kailali",
-                    "state": "Sudurpashchim"
-                }
-            ],
-            "generalPractitioner": [
-                {
-                    "reference": "Organization/B53A657B-9875-4112-8857-9C7A46FB91EA",
-                    "type": "Organization",
-                    "identifier": {
-                        "type": {
-                            "coding": [
-                                {
-                                    "system": "https://openimis.github.io/openimis_fhir_r4_ig/CodeSystem/openimis-identifiers",
-                                    "code": "UUID"
-                                }
-                            ]
-                        },
-                        "value": "B53A657B-9875-4112-8857-9C7A46FB91EA"
-                    }
-                }
-            ],
-            "contact": [
-                {
-                    "relationship": [
-                        {
-                            "coding": [
-                                {
-                                    "system": "CodeSystem/patient-contact-relationship",
-                                    "code": "3",
-                                    "display": "Relative"
-                                }
-                            ]
-                        }
-                    ],
-                    "name": resource.get("name", [])[0] if resource.get("name") else None
-                }
-            ]
-        })
-    return transformed
 
 
 
 class WebhookEventView(APIView):
     def post(self, request):
-        # Log the incoming payload
-        print(request.data)
-        logger.info(f"Received webhook payload: {request.data}")
-        entries = request.data.get("event", {}).get("context", [])[0].get("entry", [])
+        # print(json.dumps(request.data))
+        # logger.info(f"Received webhook payload: {request.data}")
 
-        filtered_patient_resources = [
-            entry["resource"]
-            for entry in entries
-            if entry.get("resource", {}).get("resourceType") == "Patient"
-            and any(
-                coding.get("system") == "http://opencrvs.org/specs/identifier-type"
-                and coding.get("code") == "BIRTH_REGISTRATION_NUMBER"
-                for identifier in entry["resource"].get("identifier", [])
-                for coding in identifier.get("type", {}).get("coding", [])
-            )
+        entries = request.data.get("event", {}).get("context", [])[0].get("entry", [])
+        if not entries:
+            logger.error("No entries found in webhook payload.")
+            return Response({"message": "No Patient data found."}, status=400)
+
+        patient_resources = [
+            entry["resource"] for entry in entries if entry.get("resource", {}).get("resourceType") == "Patient"
         ]
 
-        transformed_patient_resources = transform_patient_resources_with_practitioner(filtered_patient_resources)
+        if not patient_resources:
+            logger.error("No Patient resources found in the payload.")
+            return Response({"message": "No Patient resources found."}, status=400)
         token = get_bearer_token()
         
-        if  token:
-            # Post the filtered patient data to the API
-            post_filtered_patient(filtered_patient_resources[0], token)        
+        if  token:        
+            for idx, patient_resource in enumerate(patient_resources):
+                try:
+                    is_head = idx == 0  # Set True for the first patient only
+                    mapped_patient = map_patient_data(patient_resource, is_head=is_head)
+                    print(json.dumps(mapped_patient))
+                    # logger.info(f"Mapped patient data: {json.dumps(mapped_patient)}")
+                    post_filtered_patient(mapped_patient, token)  # Post each patient to API
+                except Exception as e:
+                    logger.error(f"Error processing patient data: {str(e)}")
+
+        return Response({"message": "Event received and processed successfully"}, status=200)
         return Response({"message": f"Event received and processed successfully"}, status=200)
 
 
@@ -235,6 +161,9 @@ class ListAppWebhooksAPIView(APIView):
 
         except requests.exceptions.RequestException as e:
             return Response({"error": str(e)}, status=500)
+
+
+
 
 class DeleteWebHooksAPIView(APIView):
     config = get_configuration()
