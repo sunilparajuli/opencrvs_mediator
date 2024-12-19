@@ -54,12 +54,11 @@ yarn-error.log
 
 # Environment variables and credentials
 .env
-.env.*
+
 
 # Docker files
 docker-compose.override.yml
 docker-compose.local.yml
-*.env
 
 # Static and media files (if you don't want to commit them)
 static/
