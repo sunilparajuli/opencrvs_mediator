@@ -21,7 +21,7 @@ def map_patient_data(resource, is_head=False, group_reference_id="c8e83c86-5868-
     patient_id = str(uuid.uuid4())  # Generate unique ID for the patient
     identifier_value = extract_identifier_value(resource)  # Extract the value from 'identifier'
 
-    import pdb;pdb.set_trace()
+    # import pdb;pdb.set_trace()
     mapped_patient = {
         "resourceType": "Patient",
         "id": patient_id,

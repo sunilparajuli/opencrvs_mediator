@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/4.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
-
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -30,7 +30,12 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
-import os
+
+
+from dotenv import load_dotenv
+
+# Load environment variables from the .env file
+load_dotenv()
 
 # Application definition
 
@@ -181,3 +186,12 @@ REST_FRAMEWORK = {
 #         },
 #     },
 # }
+
+OPENHIM_URL=os.getenv('OPENHIM_URL')
+CALLBACK_URL_OPENHIM=os.getenv('CALLBACK_URL_OPENHIM')
+OPENIMIS_FHIR_PATIENT_URL=os.getenv('OPENIMIS_FHIR_PATIENT_URL')
+IMIS_USERNAME=os.getenv('IMIS_USERNAME')
+IMIS_PASSWORD=os.getenv('IMIS_PASSWORD')
+SUBSCRIBE_WEBHOOK_THROUGH_OPENHIM=os.getenv('SUBSCRIBE_WEBHOOK_THROUGH_OPENHIM')
+LIST_WEBHOOKS_URL=os.getenv('LIST_WEBHOOKS_URL')
+SECRECT=os.getenv('SECRECT')

@@ -1,5 +1,7 @@
 from django.urls import path
-from webhook_handler.views import SubscriptionView, WebhookEventView
+from webhook_handler.views import  WebhookEventView
+from webhook_handler.subscription import SubscriptionView, ListAppWebhooksAPIView, DeleteWebHooksAPIView
+
 from .views import *
 
 urlpatterns = [
