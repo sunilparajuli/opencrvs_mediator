@@ -38,6 +38,7 @@ def post_filtered_patient(filtered_patient, token):
 
 class WebhookEventView(APIView):
     def post(self, request):
+        print("request", request.data)
         entries = request.data.get("event", {}).get("context", [])[0].get("entry", [])
         if not entries:
             logger.error("No entries found in webhook payload.")
