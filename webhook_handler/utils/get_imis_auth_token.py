@@ -10,12 +10,8 @@ logger = logging.getLogger(__name__)
 def get_bearer_token():
     login_url = "https://demoimis.tinker.com.np/api/api_fhir_r4/login/" #"https://imisbeta.hib.gov.np/api/api_fhir_r4/login/"
     #https://demoimis.tinker.com.np/api/api_fhir_r4/Patient/
-    # Fetch credentials from environment variables
-    # username = os.getenv("IMIS_USERNAME", "Admin")  
-    # password = os.getenv("IMIS_PASSWORD", "jFK8,@`8b{72")
-    username = os.getenv("IMIS_USERNAME", "Admin")  
+    username = os.getenv("IMIS_USERNAME", "admin")  
     password = os.getenv("IMIS_PASSWORD", "admin123")
-    
     login_data = {
         "username": username,
         "password": password,
