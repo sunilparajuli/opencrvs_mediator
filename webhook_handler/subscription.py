@@ -53,7 +53,6 @@ class SubscriptionView(APIView):
                     'Content-Type': 'application/json'
                 }
             )
-            import pdb;pdb.set_trace()
             if response.status_code in [200,202]:
                 Subscription.objects.create(topic=topic, callback_url=callback_url)
                 return Response({"response": True}, status=status.HTTP_202_ACCEPTED)
