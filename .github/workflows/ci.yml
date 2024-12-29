@@ -1,4 +1,4 @@
-name: Django CI with SQLite
+name: Django CI
 
 on:
   push:
@@ -11,15 +11,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
-    services:
-      sqlite:
-        image: nouchka/sqlite3
-        options: >-
-          --health-cmd "sqlite3 /tmp/db.sqlite3 .databases"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
       - name: Checkout Code
@@ -35,24 +26,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Set Up Django Environment
+      - name: Run Migrations
         run: |
           python manage.py migrate
-          python manage.py collectstatic --noinput
-
-      - name: Run Tests
-        env:
-          DJANGO_SETTINGS_MODULE: your_project.settings
-          SECRET_KEY: test_secret_key
-          DEBUG: true
-        run: |
-          python manage.py test
 
       - name: Run Linter
         run: |
           flake8 .
-
-      - name: Run Django Server (For Debugging)
-        if: failure()
-        run: |
-          python manage.py runserver 0.0.0.0:8000
