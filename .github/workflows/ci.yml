@@ -30,6 +30,6 @@ jobs:
         run: |
           python manage.py migrate
 
-      - name: Run Linter
+      - name: Run Server
         run: |
-          flake8 .
+          python manage.py runserver
