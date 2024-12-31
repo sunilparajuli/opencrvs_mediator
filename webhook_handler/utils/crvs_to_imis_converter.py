@@ -14,12 +14,12 @@ def extract_identifier_value(resource):
     return identifiers[0]["value"] if identifiers else "11112223"
 
 # Function to map patient data
-def map_patient_data(resource, is_head=False, group_reference_json=None):
+def map_patient_data(resource, is_head=False, group_reference_id=None):
     """
     Maps a Patient resource to the required structure.
     :param resource: The source FHIR Patient resource.
     :param is_head: Boolean to indicate if this Patient is the head of the family.
-    :param group_reference_json: JSON structure for the group reference to use for family members.
+    :param group_reference_id: JSON structure for the group reference to use for family members.
     """
     import uuid
 
@@ -37,12 +37,26 @@ def map_patient_data(resource, is_head=False, group_reference_json=None):
         }
     ]
 
-    # Add group reference for non-head patients
-    if not is_head and group_reference_json:
+   # Add group reference for non-head patients
+    if not is_head and group_reference_id:
         extensions.append(
             {
                 "url": "https://openimis.github.io/openimis_fhir_r4_ig/StructureDefinition/patient-group-reference",
-                "valueReference": group_reference_json
+                "valueReference": {
+                    "reference": f"Group/{group_reference_id}",
+                    "type": "Group",
+                    "identifier": {
+                        "type": {
+                            "coding": [
+                                {
+                                    "system": "https://openimis.github.io/openimis_fhir_r4_ig/CodeSystem/openimis-identifiers",
+                                    "code": "UUID"
+                                }
+                            ]
+                        },
+                        "value": group_reference_id
+                    }
+                }
             }
         )
 
@@ -77,7 +91,7 @@ def map_patient_data(resource, is_head=False, group_reference_json=None):
         "name": [
             {
                 "use": "usual",
-                "family": resource["name"][0]["family"],
+                "family": resource["name"][0]["family"][0],
                 "given": [resource["name"][0]["given"][0]]
             }
         ],
@@ -118,5 +132,10 @@ def map_patient_data(resource, is_head=False, group_reference_json=None):
             }
         ]
     }
+
+    import json
+    print(json.dumps(mapped_patient, indent=2))
+
+    # import pdb;pdb.set_trace()
 
     return mapped_patient
