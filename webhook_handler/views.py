@@ -226,42 +226,42 @@ class WebhookEventView(APIView):
             logger.info("Identified FATHER patient.")
         processed_ids = {}
         # Process CHILD
+        group_reference_id = None
         if child:
             try:
-                mapped_child = map_patient_data(child, is_head=False)
+                mapped_child = map_patient_data(child, is_head=True)
                 logger.info(f"Mapped CHILD Data: {json.dumps(mapped_child)}")
-                processed_ids["child"] = post_filtered_patient(mapped_child, token).get("id")
-                import pdb;pdb.set_trace()
-                logger.info(f"CHILD ID: {child_id}")
+                response = post_filtered_patient(mapped_child, token)
+                if response and response.get("id"):
+                    group_reference_id = response["extension"][2]["valueReference"]["identifier"]["value"]
+                    processed_ids["child"] = response["id"]
+                    logger.info(f"CHILD processed with ID: {response['id']}, Group Reference: {group_reference_id}")
             except Exception as e:
                 logger.error(f"Error processing CHILD data: {str(e)}")
 
         # Process FATHER
-        if father:
+        if father and group_reference_id:
             try:
-                mapped_father = map_patient_data(father, is_head=False)
+                mapped_father = map_patient_data(father, is_head=False, group_reference_id=group_reference_id)
                 logger.info(f"Mapped FATHER Data: {json.dumps(mapped_father)}")
-                processed_ids["father"] = post_filtered_patient(mapped_father, token).get("id")
-                logger.info(f"FATHER ID: {father_id}")
+                response = post_filtered_patient(mapped_father, token)
+                if response and response.get("id"):
+                    processed_ids["father"] = response["id"]
+                    logger.info(f"FATHER processed with ID: {response['id']}")
             except Exception as e:
                 logger.error(f"Error processing FATHER data: {str(e)}")
 
         # Process MOTHER
-        if mother:
+        if mother and group_reference_id:
             try:
-                mapped_mother = map_patient_data(mother, is_head=False)
+                mapped_mother = map_patient_data(mother, is_head=False, group_reference_id=group_reference_id)
                 logger.info(f"Mapped MOTHER Data: {json.dumps(mapped_mother)}")
-                processed_ids["mother"] = post_filtered_patient(mapped_mother, token).get("id")
+                response = post_filtered_patient(mapped_mother, token)
+                if response and response.get("id"):
+                    processed_ids["mother"] = response["id"]
+                    logger.info(f"MOTHER processed with ID: {response['id']}")
             except Exception as e:
                 logger.error(f"Error processing MOTHER data: {str(e)}")
-
-        # Post the Group resource
-        try:
-            post_family_group(processed_ids, token)
-            logger.info("Successfully posted Group resource.")
-        except Exception as e:
-            logger.error(f"Error posting Group resource: {str(e)}")
-
 
         # Log or return IDs for further processing if needed
         logger.info(f"Processed IDs - CHILD: {child_id}, FATHER: {father_id}, MOTHER: {mother_id}")
