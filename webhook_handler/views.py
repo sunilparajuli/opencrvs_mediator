@@ -140,7 +140,7 @@ class WebhookEventView(APIView):
                 logger.error(f"Error processing CHILD data: {str(e)}")
 
         # Process FATHER
-        if father and group_reference_id:
+        if settings.COUNTRY_CONFIG == "NEPAL" and father and group_reference_id:
             try:
                 mapped_father = map_patient_data(father, is_head=False, group_reference_id=group_reference_id)
                 logger.info(f"Mapped FATHER Data: {json.dumps(mapped_father)}")
@@ -152,7 +152,7 @@ class WebhookEventView(APIView):
                 logger.error(f"Error processing FATHER data: {str(e)}")
 
         # Process MOTHER
-        if mother and group_reference_id:
+        if settings.COUNTRY_CONFIG == "NEPAL" and mother and group_reference_id:
             try:
                 mapped_mother = map_patient_data(mother, is_head=False, group_reference_id=group_reference_id)
                 logger.info(f"Mapped MOTHER Data: {json.dumps(mapped_mother)}")
