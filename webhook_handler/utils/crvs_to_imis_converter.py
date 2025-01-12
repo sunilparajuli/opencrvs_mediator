@@ -14,26 +14,32 @@ def extract_identifier_value(resource):
     return identifiers[0]["value"] if identifiers else "11112223"
 
 # Function to map patient data
-def map_patient_data(resource, is_head=False, group_reference_id="c8e83c86-5868-479a-8c30-b41d16c77cc3"):
+def map_patient_data(resource, is_head=False, group_reference_id=None):
     """
     Maps a Patient resource to the required structure.
+    :param resource: The source FHIR Patient resource.
+    :param is_head: Boolean to indicate if this Patient is the head of the family.
+    :param group_reference_id: JSON structure for the group reference to use for family members.
     """
+    import uuid
+
     patient_id = str(uuid.uuid4())  # Generate unique ID for the patient
     identifier_value = extract_identifier_value(resource)  # Extract the value from 'identifier'
 
-    # import pdb;pdb.set_trace()
-    mapped_patient = {
-        "resourceType": "Patient",
-        "id": patient_id,
-        "extension": [
-            {
-                "url": "https://openimis.github.io/openimis_fhir_r4_ig/StructureDefinition/patient-is-head",
-                "valueBoolean": is_head  # Set True only for the first loop
-            },
-            {
-                "url": "https://openimis.github.io/openimis_fhir_r4_ig/StructureDefinition/patient-card-issued",
-                "valueBoolean": False
-            },
+    extensions = [
+        {
+            "url": "https://openimis.github.io/openimis_fhir_r4_ig/StructureDefinition/patient-is-head",
+            "valueBoolean": is_head
+        },
+        {
+            "url": "https://openimis.github.io/openimis_fhir_r4_ig/StructureDefinition/patient-card-issued",
+            "valueBoolean": False
+        }
+    ]
+
+   # Add group reference for non-head patients
+    if not is_head and group_reference_id:
+        extensions.append(
             {
                 "url": "https://openimis.github.io/openimis_fhir_r4_ig/StructureDefinition/patient-group-reference",
                 "valueReference": {
@@ -52,7 +58,12 @@ def map_patient_data(resource, is_head=False, group_reference_id="c8e83c86-5868-
                     }
                 }
             }
-        ],
+        )
+
+    mapped_patient = {
+        "resourceType": "Patient",
+        "id": patient_id,
+        "extension": extensions,
         "identifier": [
             {
                 "type": {
@@ -121,4 +132,10 @@ def map_patient_data(resource, is_head=False, group_reference_id="c8e83c86-5868-
             }
         ]
     }
+
+    import json
+    print(json.dumps(mapped_patient, indent=2))
+
+    # import pdb;pdb.set_trace()
+
     return mapped_patient

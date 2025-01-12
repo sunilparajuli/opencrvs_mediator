@@ -3,7 +3,7 @@
 *.pyo
 *.pyd
 __pycache__/
-
+webhook_handler/__pycache__/*.pyc
 # Django-specific files
 *.log
 *.pot
