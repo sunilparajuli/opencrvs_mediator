@@ -64,7 +64,7 @@ class WebhookEventView(APIView):
         logger.info("Received webhook event.")
         
         entries = request.data.get("event", {}).get("context", [])[0].get("entry", [])
-
+        import pdb;pdb.set_trace()
         if not entries:
             logger.error("No entries found in webhook payload.")
             return Response({"message": "No entries found."}, status=status.HTTP_400_BAD_REQUEST)
