@@ -153,15 +153,15 @@ class WebhookEventView(APIView):
 
         # Process MOTHER
         if settings.COUNTRY_CONFIG == "NEPAL" and mother and group_reference_id:
-            try:
-                mapped_mother = map_patient_data(mother, is_head=False, group_reference_id=group_reference_id)
-                logger.info(f"Mapped MOTHER Data: {json.dumps(mapped_mother)}")
-                response = post_filtered_patient(mapped_mother, token)
-                if response and response.get("id"):
-                    processed_ids["mother"] = response["id"]
-                    logger.info(f"MOTHER processed with ID: {response['id']}")
-            except Exception as e:
-                logger.error(f"Error processing MOTHER data: {str(e)}")
+            from utils.fetch_or_create_mother import fetch_or_create_mother
+            from utils.claim_submit import submit_fhir_claim_to_openimis
+            mother_uuid = fetch_or_create_mother(mother, token, group_reference_id)
+            claim_response = submit_fhir_claim_to_openimis(mother_uuid, token, claim_data)
+            if mother_uuid:
+                processed_ids["mother"] = mother_uuid
+                logger.info(f"MOTHER processed with UUID: {mother_uuid}")
+            else:
+                logger.error("Failed to fetch or create MOTHER in OpenIMIS.")
 
         # Log or return IDs for further processing if needed
         logger.info(f"Processed IDs - CHILD: {child_id}, FATHER: {father_id}, MOTHER: {mother_id}")
