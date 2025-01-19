@@ -2,7 +2,9 @@ import logging
 logger = logging.getLogger(__name__)
 import requests
 from django.conf import settings
-
+import json
+from webhook_handler.utils.crvs_to_imis_converter import map_patient_data
+from webhook_handler.views import post_filtered_patient
 def fetch_mother_from_openimis(identifier_value, token):
     """
     Fetches the mother's UUID from OpenIMIS using a unique identifier.
@@ -41,7 +43,7 @@ def fetch_or_create_mother(mother_resource, token, group_reference_id=None):
     """
     # Extract a unique identifier for the mother (e.g., BIRTH_REGISTRATION_NUMBER)
 
-    import pdb;pdb.set_trace()
+    
     mother_identifier = next(
         (identifier["value"] for identifier in mother_resource.get("identifier", [])
         if identifier.get("value")),  # Check if "value" exists
