@@ -48,6 +48,7 @@ def post_filtered_patient(filtered_patient, token):
             logger.error(
                 f"Failed to post patient data, status code: {response.status_code}, response: {response.text}"
             )
+            # return uuid if exists already
             return None
     except requests.RequestException as e:
         logger.error(f"Exception during patient data post: {str(e)}")
@@ -156,6 +157,7 @@ class WebhookEventView(APIView):
             from webhook_handler.utils.create_or_fetch_mother import fetch_or_create_mother
             from webhook_handler.utils.submit_claim import submit_fhir_claim_to_openimis
             mother_uuid = fetch_or_create_mother(mother, token, group_reference_id)
+            # import pdb;pdb.set_trace()
             claim_response = submit_fhir_claim_to_openimis(mother_uuid, token)
             if mother_uuid:
                 processed_ids["mother"] = mother_uuid

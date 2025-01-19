@@ -5,6 +5,29 @@ from django.conf import settings
 import json
 from webhook_handler.utils.crvs_to_imis_converter import map_patient_data
 from webhook_handler.views import post_filtered_patient
+
+def fetch_patient_uuid(response):
+    """
+    Extracts the patient UUID from the JSON response.
+    
+    :param response: The JSON response from the OpenIMIS API.
+    :return: The patient UUID if found, None otherwise.
+    """
+    try:
+        # Parse the JSON response
+        patient = response.json()  # Directly get the patient resource
+        
+        # Extract the UUID from the identifier list
+        for identifier in patient.get("identifier", []):
+            if identifier.get("type", {}).get("coding", [{}])[0].get("code") == "UUID":
+                return identifier.get("value")
+        
+        # If no UUID is found, return None
+        return None
+    except Exception as e:
+        logger.error(f"Error extracting patient UUID: {str(e)}")
+        return None
+
 def fetch_mother_from_openimis(identifier_value, token):
     """
     Fetches the mother's UUID from OpenIMIS using a unique identifier.
@@ -20,11 +43,10 @@ def fetch_mother_from_openimis(identifier_value, token):
         
         response = requests.get(search_url, headers=headers)
         response.raise_for_status()
-        
-        patients = response.json().get("data", [])
-        if patients:
-            # Assuming the first match is the correct one
-            return patients[0].get("id")
+        patient_uuid = fetch_patient_uuid(response)
+        return patient_uuid
+
+
     except requests.exceptions.RequestException as e:
         logger.error(f"Error fetching MOTHER from OpenIMIS: {str(e)}")
     
@@ -54,6 +76,7 @@ def fetch_or_create_mother(mother_resource, token, group_reference_id=None):
         logger.error("No unique identifier found for MOTHER.")
         return None
     
+
     # Fetch mother's information from OpenIMIS using the unique identifier
     mother_uuid = fetch_mother_from_openimis(mother_identifier, token)
     
