@@ -198,3 +198,16 @@ LIST_WEBHOOKS_URL=os.getenv('LIST_WEBHOOKS_URL')
 SECRECT=os.getenv('SECRECT')
 COUNTRY_CONFIG=os.getenv('COUNTRY_CONFIG')
 OPENIMIS_FHIR_CLAIM_URL=os.getenv('OPENIMIS_FHIR_CLAIM_URL')
+
+
+OPENHIM_CONFIG = {
+    'url': os.getenv('OPENHIM_URL', 'https://localhost:8080'),
+    'openhim_core_url': os.getenv('OPENHIM_CORE_URL', 'https://localhost:8080'),
+    'username': os.getenv('OPENHIM_USERNAME', 'root@openhim.org'),
+    'password': os.getenv('OPENHIM_PASSWORD', 'Apple@12345'),
+    'mediator_name': os.getenv('OPENHIM_MEDIATOR_NAME', 'DjangoMediator'),
+    'host': os.getenv('OPENHIM_HOST', 'localhost'),
+    'port': int(os.getenv('OPENHIM_PORT', 8080)),
+    'heartbeat_interval': int(os.getenv('HEARTBEAT_INTERVAL', 3600)),
+    'verify_ssl': os.getenv('VERIFY_SSL', 'False').lower() == 'true'
+}
