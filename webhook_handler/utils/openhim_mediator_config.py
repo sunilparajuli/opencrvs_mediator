@@ -28,16 +28,40 @@ def register_mediator():
                         "primary": True,
                         "methods": ["GET"],
                         "type": "http",
-                    }
+                    },
+                    {
+                        "name": "GET Channel",
+                        "urlPattern": "^/api/fhir/patient$",  # URL pattern for GET requests
+                        "routes": [
+                            {
+                                "name": "django fetch data",
+                                "host": config["host"],
+                                "path": "/api/fhir/patient",
+                                "port": config["port"],
+                                "primary": True,
+                                "methods": ["GET"],
+                                "type": "http",
+                            }
+                        ],
+                    },
                 ],
             }
         ],
         # Ensure at least one endpoint is defined
         "endpoints": [
             {
-                "name": "Bootstrap Scaffold Mediator Endpoint",
+                "name": "post claim",
                 "host": config["host"],
-                "path": "/api/crvs/opencrvs/",
+                "path": "/api/fhir/claim/",
+                "port": config["port"],
+                "primary": False,
+                "type": "http",
+                "methods": ["POST"],
+            },
+            {
+                "name": "post patient",
+                "host": config["host"],
+                "path": "/api/fhir/patient/",
                 "port": config["port"],
                 "primary": False,
                 "type": "http",

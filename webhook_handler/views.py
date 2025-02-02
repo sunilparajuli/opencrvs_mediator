@@ -32,7 +32,8 @@ def post_filtered_patient(filtered_patient, token):
     Posts filtered patient data to OpenIMIS FHIR API.
     Returns the full response if successful, None otherwise.
     """
-    post_url = settings.OPENIMIS_FHIR_PATIENT_URL
+    #post_url = settings.OPENIMIS_FHIR_PATIENT_URL
+    post_url = f"{settings.OPENHIM_URL}/fhir-patient"
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json"

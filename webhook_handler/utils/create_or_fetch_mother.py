@@ -38,7 +38,8 @@ def fetch_mother_from_openimis(identifier_value, token):
     """
     try:
         # Replace with the actual OpenIMIS API endpoint for searching patients
-        search_url = f"{settings.OPENIMIS_FHIR_PATIENT_URL}?identifier={identifier_value}"
+        #search_url = f"{settings.OPENIMIS_FHIR_PATIENT_URL}?identifier={identifier_value}"
+        search_url = f"{settings.OPENHIM_URL}/fhir/patient?identifier={identifier_value}"
         headers = {"Authorization": f"Bearer {token}"}
         
         response = requests.get(search_url, headers=headers)
